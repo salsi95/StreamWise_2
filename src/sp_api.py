@@ -82,7 +82,7 @@ def buscar_peliculas (genero, ano, pagina):
 
 
 
-def obtener_datos (dicc_peliculas):
+def obtener_datos (api_s,api):
     """
     Procesa un diccionario de películas y extrae información relevante para crear un DataFrame.
 
@@ -92,26 +92,22 @@ def obtener_datos (dicc_peliculas):
     Retorna:
         pd.DataFrame: Un DataFrame con las columnas 'id', 'title', 'type', 'genre' y 'year', representando las películas y su información.
     """
-
-    todas_pelis = {}
-    for genero in dicc_peliculas.keys():
-        for llamada in dicc_peliculas[genero]:
-            try:
-                for pelicula in llamada['results']:
-                    lista_peli=[]
-                    lista_peli.append(pelicula['id'])
-                    lista_peli.append(pelicula['titleText']['text']) #Titulo
-                    lista_peli.append(pelicula['titleType']['text']) #Type
-                    lista_peli.append(genero)#Genero
-                    lista_peli.append(pelicula['releaseYear']['year'])#año
-                    lista_peli.append(pelicula['primaryImage']['url'])
-                    todas_pelis[pelicula['id']] = lista_peli
+    lista_errores = []
+    for pagina in api_s.find():
+        for pelicula in pagina['results']:
+            try: 
+                dicc_peli = {}
+                dicc_peli['id_IMDB'] = pelicula['id']
+                dicc_peli['Title'] = pelicula['titleText']['text'] #Titulo
+                dicc_peli['Type'] = pelicula['titleType']['text'] #Type
+                dicc_peli['Genre'] = pagina['next'].split('=')[-1]#Genero
+                dicc_peli['Year'] = pelicula['releaseYear']['year']#año
+                dicc_peli['Poster'] = pelicula['primaryImage']['url']
+                api.insert_one(dicc_peli)
             except:
-                pass
+                lista_errores.append(pelicula)
 
-    df = pd.DataFrame(todas_pelis).T
-    df.rename(columns={0:'id', 1:'title', 2: 'type', 3: 'genre', 4: 'year', 5:'poster'}, inplace=True)
-    return df
+    print(lista_errores)
 
 
 def buscar_genero (df):
